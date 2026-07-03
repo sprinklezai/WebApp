@@ -6,35 +6,50 @@
     <title>WebApp</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background: #f4f7fb;
-        color: #222;
         margin: 0;
+        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 100vh;
+        background: linear-gradient(135deg, #1d3557, #457b9d);
+        color: #f1faee;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       }
-      .container {
-        max-width: 700px;
-        padding: 2rem;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      .card {
+        width: min(96vw, 720px);
+        padding: 2.5rem;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 60px rgba(10, 25, 47, 0.35);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
       }
       h1 {
-        margin-top: 0;
+        font-size: clamp(2.5rem, 4vw, 3.8rem);
+        margin: 0;
       }
       p {
-        line-height: 1.6;
+        margin: 1.5rem 0 0;
+        line-height: 1.75;
+        max-width: 42rem;
+      }
+      .label {
+        display: inline-flex;
+        margin-top: 1.5rem;
+        padding: 0.65rem 1rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        color: #a8dadc;
+        font-size: 0.95rem;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>WebApp</h1>
-      <p>This is a starter HTML page for your repository.</p>
-      <p>To host this on GitHub Pages, enable Pages for the repository and use this file as the site entry point.</p>
+    <div class="card">
+      <span class="label">WebApp</span>
+      <h1>Welcome to your GitHub Pages site</h1>
+      <p>This repository now includes a clean static homepage. When GitHub Pages is enabled for this repository, this page will be served from <strong>index.html</strong>.</p>
+      <p>To update the content, edit this file directly and push the changes to <code>main</code>.</p>
     </div>
   </body>
 </html>
