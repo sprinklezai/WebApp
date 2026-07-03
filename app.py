@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from supabase import create_client, Client
 
 # -----------------------------------------------------------------------------
 # 1. PAGE SETUP & EXACT VISUAL THEME
@@ -52,22 +53,42 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. DATA LOADING (WITH GRACEFUL FALLBACKS)
+# 2. DATA LOADING (SUPABASE)
 # -----------------------------------------------------------------------------
+@st.cache_resource
+def init_supabase():
+    """Initialize Supabase client"""
+    url = st.secrets["supabase_url"]
+    key = st.secrets["supabase_key"]
+    return create_client(url, key)
+
 @st.cache_data
 def fetch_live_sheets():
-    BASE_URL = "https://raw.githubusercontent.com/sprinklezai/WebApp/main/"
+    """Fetch data from Supabase tables with fallback to mock data"""
     try:
-        stores = pd.read_excel(BASE_URL + "stores.xlsx")
-        brands = pd.read_excel(BASE_URL + "brands.xlsx")
-        companies = pd.read_excel(BASE_URL + "companies.xlsx")
-        countries = pd.read_excel(BASE_URL + "countries.xlsx")
+        supabase = init_supabase()
         
-        for df in [stores, brands, companies, countries]:
-            df.columns = df.columns.str.strip().str.upper()
-        return stores, brands, companies, countries
-    except Exception:
-        # High fidelity mock fallback mirroring image_06d58a.png
+        # Fetch from Supabase tables
+        stores = supabase.table("stores").select("*").execute().data
+        brands = supabase.table("brands").select("*").execute().data
+        companies = supabase.table("companies").select("*").execute().data
+        countries = supabase.table("countries").select("*").execute().data
+        
+        # Convert to DataFrames
+        stores_df = pd.DataFrame(stores) if stores else pd.DataFrame()
+        brands_df = pd.DataFrame(brands) if brands else pd.DataFrame()
+        companies_df = pd.DataFrame(companies) if companies else pd.DataFrame()
+        countries_df = pd.DataFrame(countries) if countries else pd.DataFrame()
+        
+        # Normalize column names
+        for df in [stores_df, brands_df, companies_df, countries_df]:
+            if not df.empty:
+                df.columns = df.columns.str.strip().str.upper()
+        
+        return stores_df, brands_df, companies_df, countries_df
+    except Exception as e:
+        st.warning(f"Supabase connection failed: {str(e)}. Using fallback data.")
+        # High fidelity mock fallback
         m_stores = pd.DataFrame({
             'STORE NO': ['3133', '4336', '5742', '11010', '11935', '12033', '12156'],
             'STORE NAME': ['CSC MALL OF QATAR', 'JMP JLT', 'SLI JLT', 'CSC ABUDHABI MALL', 'CSC ARABIAN RANCHES', 'CSC CENTURY MALL FUJAIRAH', 'CSC ABUDHABI CORNICHE'],
