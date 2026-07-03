@@ -11,18 +11,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom styling to recreate the off-white minimalist palette from image_0497e9.png
 st.markdown("""
 <style>
-    /* Global background color */
     .stApp { background-color: #FAF8F5; font-family: 'Inter', sans-serif; }
-    
-    /* Top Header Meta Styling */
     .header-tag { font-size: 0.75rem; font-weight: 700; color: #9A3412; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px; }
     .header-main { font-family: 'Georgia', serif; font-size: 2.25rem; font-weight: 700; color: #1E293B; margin-top: 0px; margin-bottom: 2px; }
     .header-sub { font-size: 0.85rem; color: #64748B; margin-bottom: 20px; }
     
-    /* Filter Panel Container */
     .filter-box {
         background-color: #FCFAF7;
         border: 1px solid #EADCC9;
@@ -32,7 +27,6 @@ st.markdown("""
     }
     .filter-label { font-size: 0.7rem; font-weight: bold; color: #78350F; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
 
-    /* KPI Cards Styling */
     .kpi-card {
         background-color: #FAF8F5;
         border: 1px solid #EADCC9;
@@ -47,7 +41,6 @@ st.markdown("""
     .kpi-value-countries { font-family: 'Georgia', serif; font-size: 3rem; color: #14532D; font-weight: 700; margin: 5px 0; }
     .kpi-subtext { font-size: 0.8rem; color: #78716C; }
 
-    /* Block Sections */
     .section-container {
         background-color: #FCFAF7;
         border: 1px solid #EADCC9;
@@ -59,23 +52,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. REMOTE DATA RETRIEVAL (LIVE COUPLING REPO DATA)
+# 2. DATA LOADING (WITH GRACEFUL FALLBACKS)
 # -----------------------------------------------------------------------------
 @st.cache_data
 def fetch_live_sheets():
+    BASE_URL = "https://raw.githubusercontent.com/sprinklezai/WebApp/main/"
     try:
-        # Load from local Excel files
-        stores = pd.read_excel("Store_Master.xlsx")
-        brands = pd.read_excel("Brand_Master.xlsx")
-        companies = pd.read_excel("Company_Master.xlsx")
-        countries = pd.read_excel("Country_Master.xlsx")
+        stores = pd.read_excel(BASE_URL + "stores.xlsx")
+        brands = pd.read_excel(BASE_URL + "brands.xlsx")
+        companies = pd.read_excel(BASE_URL + "companies.xlsx")
+        countries = pd.read_excel(BASE_URL + "countries.xlsx")
         
-        # Clean column spaces and force uppercase mapping
         for df in [stores, brands, companies, countries]:
             df.columns = df.columns.str.strip().str.upper()
         return stores, brands, companies, countries
     except Exception:
-        # Fallbacks explicitly typed to match required upper-case constraints
+        # High fidelity mock fallback mirroring image_06d58a.png
         m_stores = pd.DataFrame({
             'STORE NO': ['3133', '4336', '5742', '11010', '11935', '12033', '12156'],
             'STORE NAME': ['CSC MALL OF QATAR', 'JMP JLT', 'SLI JLT', 'CSC ABUDHABI MALL', 'CSC ARABIAN RANCHES', 'CSC CENTURY MALL FUJAIRAH', 'CSC ABUDHABI CORNICHE'],
@@ -93,7 +85,7 @@ def fetch_live_sheets():
 raw_stores, raw_brands, raw_companies, raw_countries = fetch_live_sheets()
 
 # -----------------------------------------------------------------------------
-# 3. GLOBAL TOP HEADER PANEL
+# 3. HEADER
 # -----------------------------------------------------------------------------
 col_h1, col_h2 = st.columns([4, 1])
 with col_h1:
@@ -107,15 +99,14 @@ with col_h2:
         st.rerun()
 
 # -----------------------------------------------------------------------------
-# 4. SLICERS FILTER CONTROL (INTERACTIVE SLICER REGION)
+# 4. INTERACTIVE FILTER SLICERS PANEL
 # -----------------------------------------------------------------------------
 st.markdown('<div class="filter-box">', unsafe_allow_html=True)
 fil_col1, fil_col2, fil_col3 = st.columns(3)
 
-# Bulletproof fallback collection strategies if columns differ across individual sheets
-company_list = sorted(list(raw_stores["COMPANY"].unique())) if "COMPANY" in raw_stores.columns and not raw_stores.empty else (sorted(list(raw_companies["COMPANY"].unique())) if "COMPANY" in raw_companies.columns else [])
-country_list = sorted(list(raw_stores["COUNTRY"].unique())) if "COUNTRY" in raw_stores.columns and not raw_stores.empty else (sorted(list(raw_countries["COUNTRY"].unique())) if "COUNTRY" in raw_countries.columns else [])
-brand_list = sorted(list(raw_stores["BRAND"].unique())) if "BRAND" in raw_stores.columns and not raw_stores.empty else (sorted(list(raw_brands["BRAND"].unique())) if "BRAND" in raw_brands.columns else [])
+company_list = sorted(list(raw_stores["COMPANY"].dropna().unique())) if "COMPANY" in raw_stores.columns else (sorted(list(raw_companies["COMPANY"].dropna().unique())) if "COMPANY" in raw_companies.columns else [])
+country_list = sorted(list(raw_stores["COUNTRY"].dropna().unique())) if "COUNTRY" in raw_stores.columns else (sorted(list(raw_countries["COUNTRY"].dropna().unique())) if "COUNTRY" in raw_countries.columns else [])
+brand_list = sorted(list(raw_stores["BRAND"].dropna().unique())) if "BRAND" in raw_stores.columns else (sorted(list(raw_brands["BRAND"].dropna().unique())) if "BRAND" in raw_brands.columns else [])
 
 with fil_col1:
     st.markdown('<p class="filter-label">Company</p>', unsafe_allow_html=True)
@@ -128,18 +119,26 @@ with fil_col3:
     selected_brands = st.multiselect("Select Brand", brand_list, default=brand_list, label_visibility="collapsed")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Safe matching execution logic against master data store tracking frame
+# -----------------------------------------------------------------------------
+# 5. FIXED SAFE MULTI-FILTER LOGIC
+# -----------------------------------------------------------------------------
 if not raw_stores.empty:
-    filtered_df = raw_stores[
-        (raw_stores['COMPANY'].isin(selected_companies) if 'COMPANY' in raw_stores.columns else True) & 
-        (raw_stores['COUNTRY'].isin(selected_countries) if 'COUNTRY' in raw_stores.columns else True) & 
-        (raw_stores['BRAND'].isin(selected_brands) if 'BRAND' in raw_stores.columns else True)
-    ]
+    # Build mask dynamically step-by-step to prevent KeyError lookups
+    mask = pd.Series(True, index=raw_stores.index)
+    
+    if 'COMPANY' in raw_stores.columns:
+        mask &= raw_stores['COMPANY'].isin(selected_companies)
+    if 'COUNTRY' in raw_stores.columns:
+        mask &= raw_stores['COUNTRY'].isin(selected_countries)
+    if 'BRAND' in raw_stores.columns:
+        mask &= raw_stores['BRAND'].isin(selected_brands)
+        
+    filtered_df = raw_stores[mask]
 else:
     filtered_df = pd.DataFrame()
 
 # -----------------------------------------------------------------------------
-# 5. DYNAMIC STRUCTURED KPI BLOCKS
+# 6. DYNAMIC KPI BLOCKS
 # -----------------------------------------------------------------------------
 kpi_1, kpi_2, kpi_3, kpi_4 = st.columns(4)
 
@@ -176,7 +175,7 @@ with kpi_3:
 
 with kpi_4:
     unique_countries = filtered_df['COUNTRY'].nunique() if 'COUNTRY' in filtered_df.columns else 0
-    country_string = ", ".join(filtered_df['COUNTRY'].unique()) if 'COUNTRY' in filtered_df.columns and len(filtered_df) > 0 else "None"
+    country_string = ", ".join(filtered_df['COUNTRY'].dropna().unique()) if 'COUNTRY' in filtered_df.columns and len(filtered_df) > 0 else "None"
     st.markdown(f'''
         <div class="kpi-card">
             <p class="kpi-label">Countries</p>
@@ -188,7 +187,7 @@ with kpi_4:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 6. STORE DIRECTORY TABLE & COUNTRY DONUT CHART
+# 7. MAIN BODY SECTIONS
 # -----------------------------------------------------------------------------
 body_col1, body_col2 = st.columns([3, 2])
 
@@ -199,13 +198,12 @@ with body_col1:
     search_query = st.text_input("Search bar", placeholder="Search store, mall, brand, or company...", label_visibility="collapsed")
     if search_query and not filtered_df.empty:
         filter_mask = pd.Series(False, index=filtered_df.index)
-        for col in ['STORE NAME', 'MALL', 'BRAND']:
+        for col in ['STORE NAME', 'STORE_NAME', 'MALL', 'BRAND']:
             if col in filtered_df.columns:
                 filter_mask |= filtered_df[col].astype(str).str.contains(search_query, case=False, na=False)
         filtered_df = filtered_df[filter_mask]
         
-    # Render available visible columns dynamically to prevent frame render faults
-    display_cols = [c for c in ['STORE NO', 'STORE NAME', 'MALL', 'BRAND', 'COUNTRY', 'COMPANY', 'STATUS'] if c in filtered_df.columns]
+    display_cols = [c for c in ['STORE NO', 'STORE_NO', 'STORE NAME', 'STORE_NAME', 'MALL', 'BRAND', 'COUNTRY', 'COMPANY', 'STATUS'] if c in filtered_df.columns]
     st.dataframe(filtered_df[display_cols] if not filtered_df.empty else filtered_df, use_container_width=True, hide_index=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
