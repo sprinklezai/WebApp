@@ -1,7 +1,0 @@
-node_modules/
-.env
-*.log
-server/config/service-account.json
-server/data/cache.json
-client/dist/
-.DS_Store
