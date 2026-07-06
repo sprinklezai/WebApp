@@ -6,18 +6,45 @@ const dataRoutes = require("./routes/dataRoutes");
 
 const app = express();
 
-app.use(cors());
+/*
+|--------------------------------------------------------------------------
+| Middleware
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://fandb-sprinklez-dashboard-live.onrender.com",
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+
+/*
+|--------------------------------------------------------------------------
+| Routes
+|--------------------------------------------------------------------------
+*/
+
+app.get("/", (req, res) => {
+  res.send("Sprinklez Backend is running...");
+});
 
 app.use("/api", authRoutes);
 app.use("/api", dataRoutes);
 
+/*
+|--------------------------------------------------------------------------
+| Start Server
+|--------------------------------------------------------------------------
+*/
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-app.get("/", (req, res) => {
-  res.send("Sprinklez backend is running");
+  console.log(`🚀 Server running on port ${PORT}`);
 });
