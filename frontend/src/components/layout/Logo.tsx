@@ -5,11 +5,10 @@ interface LogoProps {
 function Logo({ showSubtitle = true }: LogoProps) {
   return (
     <div className="flex flex-col items-center mb-8">
-      <img
-        src="/logo.png"
-        alt="Sprinklez Logo"
-        className="h-20 w-auto mb-4"
-      />
+
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-3xl font-bold text-white shadow-lg">
+        S
+      </div>
 
       <h1 className="text-3xl font-bold text-slate-800">
         Sprinklez
@@ -22,6 +21,7 @@ function Logo({ showSubtitle = true }: LogoProps) {
           F&amp;B Division
         </p>
       )}
+
     </div>
   );
 }
