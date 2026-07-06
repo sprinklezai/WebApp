@@ -56,46 +56,26 @@ function Overview() {
   const greeting =
     hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
-  const getStatus = (store: any) => {
-    const statusKey = Object.keys(store).find(
-      (key) => key.trim().toLowerCase() === "status"
-    );
-
-    if (!statusKey) return "";
-
-    return String(store[statusKey]).trim().toLowerCase();
+  const getBrandCode = (item: any) => {
+    return String(item.brand_code || "").trim().toUpperCase();
   };
 
-  const getBrandCode = (item: any) =>
-    item.Brand_Code ||
-    item.brand_code ||
-    item.BrandCode ||
-    item.brandCode ||
-    item.brand ||
-    "";
+  const getBrandName = (item: any) => {
+    return String(item.brand_name || item.brand_desc || "Brand").trim();
+  };
 
-  const getBrandName = (item: any) =>
-    item.Brand_Name ||
-    item.brand_name ||
-    item.BrandName ||
-    item.brandName ||
-    item.Brand_Desc ||
-    item.brand_desc ||
-    "Brand";
+  const getCountry = (item: any) => {
+    return String(item.country_code || "").trim().toUpperCase();
+  };
 
-  const getCountry = (store: any) =>
-    store.Country ||
-    store.country ||
-    store.Country_Name ||
-    store.country_name ||
-    store.country_code ||
-    store.Country_Code ||
-    "";
+  const getStatus = (item: any) => {
+    return String(item.status || "").trim().toLowerCase();
+  };
 
   useEffect(() => {
     async function loadOverviewData() {
       try {
-        const [brandData, companies, countries, storeData, employees] =
+        const [brandData, companyData, countryData, storeData, employeeData] =
           await Promise.all([
             getBrands(),
             getCompanies(),
@@ -120,9 +100,9 @@ function Overview() {
         setKpis({
           stores: storeData.length,
           brands: brandData.length,
-          companies: companies.length,
-          countries: countries.length,
-          employees: employees.length,
+          companies: companyData.length,
+          countries: countryData.length,
+          employees: employeeData.length,
           activeStores,
           inactiveStores,
         });
@@ -137,12 +117,10 @@ function Overview() {
   }, []);
 
   const brandCards = brands.map((brand) => {
-    const code = String(getBrandCode(brand)).trim();
+    const code = getBrandCode(brand);
     const name = getBrandName(brand);
 
-    const brandStores = stores.filter(
-      (store) => String(getBrandCode(store)).trim() === code
-    );
+    const brandStores = stores.filter((store) => getBrandCode(store) === code);
 
     const countryCount = new Set(
       brandStores.map((store) => getCountry(store)).filter(Boolean)
@@ -314,6 +292,7 @@ function Overview() {
                           {brand.stores}
                         </span>
                       </div>
+
                       <div className="h-2 rounded-full bg-slate-100">
                         <div
                           className="h-2 rounded-full bg-blue-600"
