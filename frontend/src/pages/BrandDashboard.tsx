@@ -24,6 +24,9 @@ function BrandDashboard() {
   const [selectedCompany, setSelectedCompany] = useState("");
   const [selectedStore, setSelectedStore] = useState("");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 20;
+
   useEffect(() => {
     async function loadBrand() {
       try {
@@ -38,6 +41,10 @@ function BrandDashboard() {
 
     if (code) loadBrand();
   }, [code]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCountry, selectedCompany, selectedStore]);
 
   const brandName = brandData?.brand?.brand_name || code;
   const allStores = brandData?.stores || [];
@@ -58,6 +65,13 @@ function BrandDashboard() {
       return countryMatch && companyMatch && storeMatch;
     });
   }, [allStores, selectedCountry, selectedCompany, selectedStore]);
+
+  const totalPages = Math.ceil(filteredStores.length / rowsPerPage) || 1;
+
+  const paginatedStores = filteredStores.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   const activeStores = filteredStores.filter((store: any) => {
     const status = String(store.status || "").trim().toLowerCase();
@@ -158,6 +172,7 @@ function BrandDashboard() {
     setSelectedCountry("");
     setSelectedCompany("");
     setSelectedStore("");
+    setCurrentPage(1);
   };
 
   return (
@@ -316,9 +331,17 @@ function BrandDashboard() {
           </section>
 
           <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900">
-              Store Directory
-            </h3>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                Store Directory
+              </h3>
+
+              <p className="text-sm text-slate-500">
+                Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
+                {Math.min(currentPage * rowsPerPage, filteredStores.length)} of{" "}
+                {filteredStores.length} stores
+              </p>
+            </div>
 
             <div className="mt-5 overflow-x-auto">
               <table className="w-full min-w-[1000px] text-left text-sm">
@@ -334,7 +357,7 @@ function BrandDashboard() {
                 </thead>
 
                 <tbody>
-                  {filteredStores.map((store: any) => (
+                  {paginatedStores.map((store: any) => (
                     <tr
                       key={store.store_code}
                       className="border-b border-slate-100 text-slate-700"
@@ -363,6 +386,28 @@ function BrandDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((page) => page - 1)}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                Previous
+              </button>
+
+              <span className="rounded-xl bg-blue-50 px-4 py-2 text-center text-sm font-semibold text-blue-600">
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((page) => page + 1)}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                Next
+              </button>
             </div>
           </section>
         </>
