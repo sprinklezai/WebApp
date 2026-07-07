@@ -14,6 +14,20 @@ router.get("/brand/:brandCode", (req, res) => {
 
     const normalize = (value) => String(value || "").trim().toUpperCase();
 
+    const countryLookup = new Map(
+      countries.map((country) => [
+        normalize(country.country_code),
+        country.country_name || normalize(country.country_code),
+      ])
+    );
+
+    const companyLookup = new Map(
+      companies.map((company) => [
+        normalize(company.company_code),
+        company.company_name || normalize(company.company_code),
+      ])
+    );
+
     const brand = brands.find(
       (item) => normalize(item.brand_code) === brandCode
     );
@@ -25,9 +39,22 @@ router.get("/brand/:brandCode", (req, res) => {
       });
     }
 
-    const brandStores = stores.filter(
+    const rawBrandStores = stores.filter(
       (store) => normalize(store.brand_code) === brandCode
     );
+
+    const brandStores = rawBrandStores.map((store) => {
+      const countryCode = normalize(store.country_code);
+      const companyCode = normalize(store.company_code);
+
+      return {
+        ...store,
+        country_code: countryCode,
+        country_name: countryLookup.get(countryCode) || countryCode,
+        company_code: companyCode,
+        company_name: companyLookup.get(companyCode) || companyCode,
+      };
+    });
 
     const activeStores = brandStores.filter((store) => {
       const status = String(store.status || "").trim().toLowerCase();
@@ -43,44 +70,31 @@ router.get("/brand/:brandCode", (req, res) => {
     const companyMap = new Map();
 
     brandStores.forEach((store) => {
-      const countryCode = normalize(store.country_code);
-      const companyCode = normalize(store.company_code);
-
-      if (countryCode) {
-        countryMap.set(countryCode, (countryMap.get(countryCode) || 0) + 1);
+      if (store.country_code) {
+        countryMap.set(store.country_code, {
+          country_code: store.country_code,
+          country_name: store.country_name,
+          stores:
+            (countryMap.get(store.country_code)?.stores || 0) + 1,
+        });
       }
 
-      if (companyCode) {
-        companyMap.set(companyCode, (companyMap.get(companyCode) || 0) + 1);
+      if (store.company_code) {
+        companyMap.set(store.company_code, {
+          company_code: store.company_code,
+          company_name: store.company_name,
+          stores:
+            (companyMap.get(store.company_code)?.stores || 0) + 1,
+        });
       }
     });
 
-    const countrySummary = Array.from(countryMap.entries()).map(
-      ([country_code, stores]) => {
-        const country = countries.find(
-          (item) => normalize(item.country_code) === country_code
-        );
-
-        return {
-          country_code,
-          country_name: country?.country_name || country_code,
-          stores,
-        };
-      }
+    const countrySummary = Array.from(countryMap.values()).sort(
+      (a, b) => b.stores - a.stores
     );
 
-    const companySummary = Array.from(companyMap.entries()).map(
-      ([company_code, stores]) => {
-        const company = companies.find(
-          (item) => normalize(item.company_code) === company_code
-        );
-
-        return {
-          company_code,
-          company_name: company?.company_name || company_code,
-          stores,
-        };
-      }
+    const companySummary = Array.from(companyMap.values()).sort(
+      (a, b) => b.stores - a.stores
     );
 
     res.json({

@@ -50,7 +50,7 @@ function BrandDashboard() {
 
       const companyMatch =
         !selectedCompany ||
-        String(store.company_code).trim() === selectedCompany;
+        String(store.company_code).trim().toUpperCase() === selectedCompany;
 
       const storeMatch =
         !selectedStore || String(store.store_code).trim() === selectedStore;
@@ -74,7 +74,9 @@ function BrandDashboard() {
 
     allStores.forEach((store: any) => {
       const code = String(store.country_code || "").trim().toUpperCase();
-      if (code) map.set(code, code);
+      const name = String(store.country_name || code).trim();
+
+      if (code) map.set(code, name);
     });
 
     return Array.from(map.entries()).map(([value, label]) => ({
@@ -87,8 +89,10 @@ function BrandDashboard() {
     const map = new Map<string, string>();
 
     allStores.forEach((store: any) => {
-      const code = String(store.company_code || "").trim();
-      if (code) map.set(code, code);
+      const code = String(store.company_code || "").trim().toUpperCase();
+      const name = String(store.company_name || code).trim();
+
+      if (code) map.set(code, name);
     });
 
     return Array.from(map.entries()).map(([value, label]) => ({
@@ -105,33 +109,41 @@ function BrandDashboard() {
   }, [filteredStores]);
 
   const countrySummary = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, any>();
 
     filteredStores.forEach((store: any) => {
-      const country = String(store.country_code || "").trim().toUpperCase();
-      if (country) map.set(country, (map.get(country) || 0) + 1);
+      const countryCode = String(store.country_code || "").trim().toUpperCase();
+      const countryName = String(store.country_name || countryCode).trim();
+
+      if (!countryCode) return;
+
+      map.set(countryCode, {
+        country_code: countryCode,
+        country_name: countryName,
+        stores: (map.get(countryCode)?.stores || 0) + 1,
+      });
     });
 
-    return Array.from(map.entries()).map(([country_code, stores]) => ({
-      country_code,
-      country_name: country_code,
-      stores,
-    }));
+    return Array.from(map.values()).sort((a, b) => b.stores - a.stores);
   }, [filteredStores]);
 
   const companySummary = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, any>();
 
     filteredStores.forEach((store: any) => {
-      const company = String(store.company_code || "").trim();
-      if (company) map.set(company, (map.get(company) || 0) + 1);
+      const companyCode = String(store.company_code || "").trim().toUpperCase();
+      const companyName = String(store.company_name || companyCode).trim();
+
+      if (!companyCode) return;
+
+      map.set(companyCode, {
+        company_code: companyCode,
+        company_name: companyName,
+        stores: (map.get(companyCode)?.stores || 0) + 1,
+      });
     });
 
-    return Array.from(map.entries()).map(([company_code, stores]) => ({
-      company_code,
-      company_name: company_code,
-      stores,
-    }));
+    return Array.from(map.values()).sort((a, b) => b.stores - a.stores);
   }, [filteredStores]);
 
   const kpis = {
@@ -234,36 +246,34 @@ function BrandDashboard() {
               </h3>
 
               <div className="mt-5 space-y-4">
-                {countrySummary
-                  .sort((a, b) => b.stores - a.stores)
-                  .map((country) => (
-                    <div key={country.country_code}>
-                      <div className="mb-1 flex justify-between text-sm">
-                        <span className="font-medium text-slate-700">
-                          {country.country_name}
-                        </span>
-                        <span className="font-semibold text-slate-900">
-                          {country.stores}
-                        </span>
-                      </div>
-
-                      <div className="h-2 rounded-full bg-slate-100">
-                        <div
-                          className="h-2 rounded-full bg-blue-600"
-                          style={{
-                            width: `${
-                              kpis.stores > 0
-                                ? Math.min(
-                                    100,
-                                    (country.stores / kpis.stores) * 100
-                                  )
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
+                {countrySummary.map((country: any) => (
+                  <div key={country.country_code}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="font-medium text-slate-700">
+                        {country.country_name}
+                      </span>
+                      <span className="font-semibold text-slate-900">
+                        {country.stores}
+                      </span>
                     </div>
-                  ))}
+
+                    <div className="h-2 rounded-full bg-slate-100">
+                      <div
+                        className="h-2 rounded-full bg-blue-600"
+                        style={{
+                          width: `${
+                            kpis.stores > 0
+                              ? Math.min(
+                                  100,
+                                  (country.stores / kpis.stores) * 100
+                                )
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -273,36 +283,34 @@ function BrandDashboard() {
               </h3>
 
               <div className="mt-5 space-y-4">
-                {companySummary
-                  .sort((a, b) => b.stores - a.stores)
-                  .map((company) => (
-                    <div key={company.company_code}>
-                      <div className="mb-1 flex justify-between text-sm">
-                        <span className="font-medium text-slate-700">
-                          {company.company_name}
-                        </span>
-                        <span className="font-semibold text-slate-900">
-                          {company.stores}
-                        </span>
-                      </div>
-
-                      <div className="h-2 rounded-full bg-slate-100">
-                        <div
-                          className="h-2 rounded-full bg-blue-600"
-                          style={{
-                            width: `${
-                              kpis.stores > 0
-                                ? Math.min(
-                                    100,
-                                    (company.stores / kpis.stores) * 100
-                                  )
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
+                {companySummary.map((company: any) => (
+                  <div key={company.company_code}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="font-medium text-slate-700">
+                        {company.company_name}
+                      </span>
+                      <span className="font-semibold text-slate-900">
+                        {company.stores}
+                      </span>
                     </div>
-                  ))}
+
+                    <div className="h-2 rounded-full bg-slate-100">
+                      <div
+                        className="h-2 rounded-full bg-blue-600"
+                        style={{
+                          width: `${
+                            kpis.stores > 0
+                              ? Math.min(
+                                  100,
+                                  (company.stores / kpis.stores) * 100
+                                )
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
@@ -313,7 +321,7 @@ function BrandDashboard() {
             </h3>
 
             <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <table className="w-full min-w-[1000px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
                     <th className="py-3 font-semibold">Store Code</th>
@@ -335,8 +343,8 @@ function BrandDashboard() {
                         {store.store_code}
                       </td>
                       <td className="py-4">{store.store_name}</td>
-                      <td className="py-4">{store.company_code}</td>
-                      <td className="py-4">{store.country_code}</td>
+                      <td className="py-4">{store.company_name}</td>
+                      <td className="py-4">{store.country_name}</td>
                       <td className="py-4">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${
