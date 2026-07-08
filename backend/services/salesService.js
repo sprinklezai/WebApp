@@ -15,6 +15,14 @@ function toNumber(value) {
   return Number.isNaN(num) ? 0 : num;
 }
 
+function getField(row, fieldName) {
+  const key = Object.keys(row).find(
+    (k) => String(k).trim().toLowerCase() === fieldName.toLowerCase()
+  );
+
+  return key ? row[key] : "";
+}
+
 function parseDate(value) {
   if (!value) return null;
   return String(value).split(" ")[0];
@@ -157,16 +165,16 @@ async function getSalesDashboard({
         company_name: storeInfo.company_name,
         receipt_no: receiptNo,
         transaction_no: row["Transaction No_"],
-        item_no: row["Item No_"],
+        item_no: getField(row, "Item No_"),
         item_description:
-  row["Item Description"] ||
-  row["Description"] ||
-  row["Item Description 2"] ||
-  row["Item No_"] ||
+  getField(row, "Item Description") ||
+  getField(row, "Description") ||
+  getField(row, "Item Description 2") ||
+  getField(row, "Item No_") ||
   "Unknown Item",
-        category_code: row["Item Category Code"],
-        retail_product_code: row["Retail Product Code"],
-        sales_type: normalize(row["Sales Type"] || "UNKNOWN"),
+        category_code: getField(row, "Item Category Code"),
+        retail_product_code: getField(row, "Retail Product Code"),
+        sales_type: normalize(getField(row, "Sales Type") || "UNKNOWN"),
         quantity,
         net_amount: netAmount,
         discount,
