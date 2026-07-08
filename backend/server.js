@@ -5,9 +5,9 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const overviewRoutes = require("./routes/overviewRoutes");
 const brandRoutes = require("./routes/brandRoutes");
-const dataRoutes = require("./routes/dataRoutes");
 const salesRoutes = require("./routes/salesRoutes");
 const testRoutes = require("./routes/testRoutes");
+const dataRoutes = require("./routes/dataRoutes");
 
 
 const app = express();
@@ -45,8 +45,9 @@ app.use("/api", authRoutes);
 app.use("/api", overviewRoutes);
 app.use("/api", brandRoutes);
 app.use("/api", salesRoutes);
-app.use("/api", dataRoutes);
 app.use("/api", testRoutes);
+app.use("/api", dataRoutes);
+
 
 /*
 |--------------------------------------------------------------------------
