@@ -1,7 +1,3 @@
-console.log("Sales Base URL:");
-console.log(SALES_BASE_URL);
-
-
 const AdmZip = require("adm-zip");
 const { parse } = require("csv-parse/sync");
 const { getData } = require("./excelService");
@@ -9,6 +5,8 @@ const { getData } = require("./excelService");
 const SALES_BASE_URL =
   process.env.SALES_BASE_URL ||
   "https://sprinkleztrading.com/sales-data/monthly";
+
+console.log("Sales Base URL:", SALES_BASE_URL);
 
 function normalize(value) {
   return String(value || "").trim().toUpperCase();
@@ -37,16 +35,14 @@ async function downloadZip(month = "2026_06") {
       method: "GET",
       headers: {
         "User-Agent": "Sprinklez Dashboard",
-        "Accept": "*/*",
+        Accept: "*/*",
       },
     });
 
     console.log("HTTP Status:", response.status);
 
     if (!response.ok) {
-      throw new Error(
-        `Download failed (${response.status}) : ${url}`
-      );
+      throw new Error(`Download failed (${response.status}) : ${url}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -58,13 +54,9 @@ async function downloadZip(month = "2026_06") {
     );
 
     return Buffer.from(arrayBuffer);
-
-  } catch (err) {
-
-    console.error("ZIP Download Error");
-    console.error(err);
-
-    throw err;
+  } catch (error) {
+    console.error("ZIP Download Error:", error);
+    throw error;
   }
 }
 
@@ -125,6 +117,8 @@ function parseZipCsv(buffer) {
   entries.forEach((entry) => {
     if (!entry.entryName.toLowerCase().endsWith(".csv")) return;
 
+    console.log("Reading CSV from ZIP:", entry.entryName);
+
     const csvText = entry.getData().toString("utf8");
 
     const rows = parse(csvText, {
@@ -133,10 +127,15 @@ function parseZipCsv(buffer) {
       bom: true,
       relax_quotes: true,
       relax_column_count: true,
+      trim: true,
     });
+
+    console.log("CSV Rows Parsed:", rows.length);
 
     allRows = allRows.concat(rows);
   });
+
+  console.log("Total CSV Rows Parsed:", allRows.length);
 
   return allRows;
 }
@@ -183,18 +182,19 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
     .filter(Boolean)
     .filter((row) => normalize(row.brand_code) === normalize(brandCode));
 
+  console.log("Requested Brand:", brandCode);
+  console.log("Rows After Brand Filter:", enrichedRows.length);
+
   const netRevenue = enrichedRows.reduce(
     (sum, row) => sum + row.net_sales,
     0
   );
 
   const discounts = enrichedRows.reduce((sum, row) => sum + row.discount, 0);
-
   const itemsSold = enrichedRows.reduce((sum, row) => sum + row.quantity, 0);
 
   const uniqueReceipts = new Set(enrichedRows.map((row) => row.receipt_no));
   const orders = uniqueReceipts.size;
-
   const avgOrderValue = orders ? netRevenue / orders : 0;
 
   const countryMap = new Map();
@@ -278,10 +278,9 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
       itemsSold,
       rows: enrichedRows.length,
     },
-    revenueTrend: Array.from(dateMap.entries()).map(([date, value]) => ({
-      date,
-      value,
-    })),
+    revenueTrend: Array.from(dateMap.entries())
+      .map(([date, value]) => ({ date, value }))
+      .sort((a, b) => String(a.date).localeCompare(String(b.date))),
     countrySales: Array.from(countryMap.entries()).map(([name, value]) => ({
       name,
       value,
