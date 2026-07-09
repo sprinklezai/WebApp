@@ -2,19 +2,23 @@ const fs = require("fs");
 const path = require("path");
 
 const SALES_PATH =
-  process.env.SALES_DATA_PATH ||
-  path.join(__dirname, "..", "data", "sales", "monthly");
+    process.env.SALES_DATA_PATH ||
+    "/home/u757775108/domains/sprinkleztrading.com/public_html/nodejs/backend/data/sales/monthly/";
 
 async function loadSalesZip(month = "2026_06") {
-  const filePath = path.join(SALES_PATH, `${month}_sales.zip`);
 
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Sales ZIP not found: ${filePath}`);
-  }
+    const zipFile = path.join(
+        SALES_PATH,
+        `${month}_sales.zip`
+    );
 
-  return fs.readFileSync(filePath);
+    if (!fs.existsSync(zipFile)) {
+        throw new Error(`Sales ZIP not found: ${zipFile}`);
+    }
+
+    return fs.readFileSync(zipFile);
 }
 
 module.exports = {
-  loadSalesZip,
+    loadSalesZip
 };
